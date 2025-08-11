@@ -9,7 +9,7 @@ import kotlinx.coroutines.withContext
 /**
  * CsvSeeder handles one-time CSV-based population of patient data
  *
- * - Reads from assignment_1.csv in assets/
+ * - Reads from preloaded_patients_list.csv in assets/
  * - Parses and maps rows to Patient entities
  * - Skips if already seeded (checked via SeedFlag)
  *
@@ -35,7 +35,7 @@ class CsvSeeder(private val context: Context, private val db: AppDatabase) {
 
             //read from assets
             val patients = mutableListOf<Patient>()
-            context.assets.open("assignment_1.csv").bufferedReader().useLines { lines ->
+            context.assets.open("preloaded_patients_list.csv").bufferedReader().useLines { lines ->
                 val iterator = lines.iterator()
                 if (!iterator.hasNext()) return@useLines
 
