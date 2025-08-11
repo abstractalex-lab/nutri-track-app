@@ -40,7 +40,7 @@ import com.fit2081.nutri_track_app.ui.theme.DeepGreen
  * It embeds a nested NavHost with four tabs:
  * - Home
  * - Insights
- * - NutriCoach
+ * - NutriCoac
  * - Settings
  *
  * Handles back button behavior to close the app if on Home tab.
