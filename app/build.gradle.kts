@@ -12,11 +12,11 @@ plugins {
 }
 
 android {
-    namespace = "com.fit2081.alex_34662901_assignment3"
+    namespace = "com.fit2081.nutri_track_app"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.fit2081.alex_34662901_assignment3"
+        applicationId = "com.fit2081.nutri_track_app"
         minSdk = 30
         targetSdk = 35
         versionCode = 2
