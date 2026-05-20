@@ -10,16 +10,6 @@
 ![Status](https://img.shields.io/badge/status-archived-lightgrey?style=flat)
 
 
-## 🌟 Highlights
-
-- 🔐 **Multi-user authentication** with persistent sessions and secure password management
-- 🤖 **AI-powered NutriCoach** using the Gemini API, personalised to each user's HEIFA score profile
-- 🍓 **Live fruit nutrition data** via the FruityVice API, conditionally shown based on dietary scores
-- 🏥 **Clinician Admin Dashboard** with passphrase-protected access and AI-generated data insights
-- 🗄️ **Room database** seeded once from CSV — all subsequent reads/writes are local and persistent
-- 📋 **Double-tap to copy** AI tips straight to clipboard (original HD feature)
-
-
 ## ℹ️ Overview
 
 NutriTrack is an Android application that gives users a personalised window into their dietary health. Built on top of a simple nutrition questionnaire app, this version transforms it into a fully-featured platform: persistent multi-user accounts, real-time third-party API data, AI-generated coaching, and a clinician-facing analytics dashboard.
@@ -28,10 +18,46 @@ The app scores users against the **HEIFA (Healthy Eating Index for Australians)*
 
 This was completed as **Assignment 3 (30%)** for **FIT2081 – Mobile App Development** at Monash University, Semester 1, 2025. It was a solo project targeting HD (High Distinction) marks.
 
+### 🌟 Highlights
+
+- 🔐 **Multi-user authentication** with persistent sessions and secure password management
+- 🤖 **AI-powered NutriCoach** using the Gemini API, personalised to each user's HEIFA score profile
+- 🍓 **Live fruit nutrition data** via the FruityVice API, conditionally shown based on dietary scores
+- 🏥 **Clinician Admin Dashboard** with passphrase-protected access and AI-generated data insights
+- 🗄️ **Room database** seeded once from CSV — all subsequent reads/writes are local and persistent
+- 📋 **Double-tap to copy** AI tips straight to clipboard (original HD feature)
+
 ### ✍️ Author
 
 **Alex Bui** — Monash University, FIT2081 (S1 2025)
 Student ID: 34662901 | Lab: 09_OnCampus | [GitHub](https://github.com/alexbui)
+
+
+## ⬇️ Getting Started
+
+> ⚠️ This is an archived university project. It runs as submitted but is not actively maintained.
+
+**Requirements:** Android Studio Hedgehog or later, Android API 30+
+
+```bash
+git clone https://github.com/alexbui/nutri-track-app.git
+```
+
+1. Open the project in **Android Studio** and let Gradle sync
+2. Copy the example properties file:
+   ```bash
+   cp local.properties.example local.properties
+   ```
+3. Fill in `local.properties` with your own values:
+   ```
+   sdk.dir=/path/to/your/Android/Sdk
+   GENAI_API_KEY=your_gemini_api_key_here
+   ```
+   Get a free Gemini API key from [Google AI Studio](https://aistudio.google.com)
+4. **Build → Clean Project**, then **Build → Rebuild Project**
+5. Run on an emulator or physical device (API 30+)
+
+The Room database seeds automatically from the bundled CSV on first launch — no manual setup needed.
 
 
 ## 🚀 Features
@@ -103,33 +129,6 @@ On first launch only, patient and food intake data is seeded from a bundled CSV 
 | `Patient` | UserID, PhoneNumber, Name, Sex, HEIFA scores |
 | `FoodIntake` | Questionnaire responses (FK → Patient) |
 | `NutriCoachTips` | AI-generated tips per user |
-
-
-## ⬇️ Getting Started
-
-> ⚠️ This is an archived university project. It runs as submitted but is not actively maintained.
-
-**Requirements:** Android Studio Hedgehog or later, Android API 30+
-
-```bash
-git clone https://github.com/alexbui/nutri-track-app.git
-```
-
-1. Open the project in **Android Studio** and let Gradle sync
-2. Copy the example properties file:
-   ```bash
-   cp local.properties.example local.properties
-   ```
-3. Fill in `local.properties` with your own values:
-   ```
-   sdk.dir=/path/to/your/Android/Sdk
-   GENAI_API_KEY=your_gemini_api_key_here
-   ```
-   Get a free Gemini API key from [Google AI Studio](https://aistudio.google.com)
-4. **Build → Clean Project**, then **Build → Rebuild Project**
-5. Run on an emulator or physical device (API 30+)
-
-The Room database seeds automatically from the bundled CSV on first launch — no manual setup needed.
 
 
 ## 📁 Project Structure
