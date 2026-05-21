@@ -7,6 +7,7 @@
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-4285F4?style=flat&logo=jetpackcompose&logoColor=white)
 ![Room](https://img.shields.io/badge/Room_DB-FF6F00?style=flat&logo=android&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase_AI_Logic-FFCA28?style=flat&logo=firebase&logoColor=black)
+![Security](https://img.shields.io/badge/passwords-SHA--256%20hashed-blue?style=flat&logo=shield&logoColor=white)
 ![Status](https://img.shields.io/badge/status-maintained-brightgreen?style=flat)
 
 
@@ -20,7 +21,7 @@ This was completed as **Assignment 3 (30%)** for **FIT2081 – Mobile App Develo
 
 ### 🌟 Highlights
 
-- 🔐 **Multi-user authentication** with persistent sessions and secure password management
+- 🔐 **Multi-user authentication** with persistent sessions and SHA-256 hashed passwords
 - 🤖 **AI-powered NutriCoach** using Gemini via Firebase AI Logic, personalised to each user's HEIFA score profile
 - 🍓 **Live fruit nutrition data** via the FruityVice API, conditionally shown based on dietary scores
 - 🏥 **Clinician Admin Dashboard** with passphrase-protected access and AI-generated data insights
@@ -50,7 +51,7 @@ git clone https://github.com/alexbui/nutri-track-app.git
 5. **Build → Clean Project**, then **Build → Rebuild Project**
 6. Run on an emulator or physical device (API 30+)
 
-The Room database seeds automatically from the bundled CSV on first launch — no manual setup needed.
+The Room database seeds automatically from the bundled CSV on first launch — no manual setup needed. Existing plaintext passwords are automatically migrated to SHA-256 hashes on first launch.
 
 > **Note:** No API key setup is required. Authentication is handled automatically by Firebase via `google-services.json`.
 > The active Gemini model is managed remotely via **Firebase Remote Config** (`gemini_model_name`) — update it anytime from the Firebase console without redeploying the app.
@@ -60,13 +61,17 @@ The Room database seeds automatically from the bundled CSV on first launch — n
 
 ### 🔐 Authentication & Session Management
 - First-time account claim flow: users verify via UserID + phone number, then set a name and password
-- Credentials stored securely in Room; subsequent logins only require UserID + password
+- Passwords stored as **SHA-256 hashes with random salt** — never in plaintext
+- Automatic one-time migration of existing plaintext passwords on first launch
+- Lazy migration on login as a safety net for any remaining plaintext accounts
 - Session persists across app restarts until the user manually logs out
 - **Change Password** — verifies current password before updating, with field-level validation
 
 ### 🤖 NutriCoach Assistant
 - AI motivational tips generated via **Gemini** (through Firebase AI Logic), enriched with the user's full HEIFA score data for specificity
+- If the user has searched for a fruit, that fruit is incorporated into the AI suggestion for more relevant advice
 - Model name managed dynamically via **Firebase Remote Config** — no redeployment needed to switch models
+- NutriCoach state persists across tab switches — fruit search results and AI tips are not lost on navigation
 - Fruit section powered by the **FruityVice API** — shown only when the user's fruit HEIFA score is non-optimal
 - Fruit search includes a loading indicator and a styled warning card for invalid fruit names
 - When fruit score is optimal, a random image loads from [Picsum Photos](https://picsum.photos/) instead
@@ -101,6 +106,7 @@ The Room database seeds automatically from the bundled CSV on first launch — n
 | AI Integration | Firebase AI Logic (`com.google.firebase:firebase-ai`) |
 | AI Model | Gemini 2.5 Flash Lite (via Gemini Developer API, free tier) |
 | Model Management | Firebase Remote Config |
+| Password Security | SHA-256 + random salt (`PasswordUtils.kt`) |
 | Fruit Data | FruityVice API |
 | Random Images | Picsum Photos |
 
@@ -139,6 +145,7 @@ com/alexbui/nutritrack/
 │   ├── nutricoach/           # NutriCoachTip, FruityVice API, ViewModel
 │   ├── patient/              # Patient entity, DAO, ViewModel
 │   ├── seed/                 # CSV seeder, SeedFlag
+│   ├── PasswordUtils.kt      # SHA-256 hashing and verification
 │   └── AppDatabase.kt        # Room database instance
 ├── ui/
 │   ├── screens/
@@ -163,6 +170,15 @@ Two original features were submitted beyond the base specification for HD/HD++ c
 
 2. **Change Password** (`ChangePasswordScreen.kt`)
    Accessible from the Settings screen. Verifies the user's current password before accepting a new one, with confirmation matching and length validation. Updates credentials directly in Room.
+
+
+## 🔒 Post-Submission Security Improvements
+
+The following security improvements were made after the original academic submission:
+
+- **Password hashing** — all passwords are now stored as SHA-256 hashes with a random salt via `PasswordUtils.kt`. Plaintext passwords from the original dataset are automatically migrated on first launch.
+- **API key removed from codebase** — the Gemini API key is no longer stored in `local.properties` or `BuildConfig`. Authentication is handled securely by Firebase.
+- **No credentials in version control** — `google-services.json` and `local.properties` are both gitignored.
 
 
 ## 💭 Academic Context & Disclaimer
