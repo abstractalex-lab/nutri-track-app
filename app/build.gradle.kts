@@ -15,6 +15,7 @@ android {
     defaultConfig {
         applicationId = "com.alexbui.nutritrack"
         minSdk = 30
+        //noinspection OldTargetApi
         targetSdk = 35
         versionCode = 4
         versionName = "2.1.0"
@@ -35,8 +36,10 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        }
     }
     buildFeatures {
         compose = true
