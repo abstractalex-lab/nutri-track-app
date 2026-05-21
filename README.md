@@ -7,7 +7,6 @@
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-4285F4?style=flat&logo=jetpackcompose&logoColor=white)
 ![Room](https://img.shields.io/badge/Room_DB-FF6F00?style=flat&logo=android&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase_AI_Logic-FFCA28?style=flat&logo=firebase&logoColor=black)
-![Security](https://img.shields.io/badge/passwords-SHA--256%20hashed-blue?style=flat&logo=shield&logoColor=white)
 ![Status](https://img.shields.io/badge/status-maintained-brightgreen?style=flat)
 
 
