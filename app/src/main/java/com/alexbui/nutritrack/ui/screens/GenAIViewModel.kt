@@ -3,16 +3,20 @@ package com.alexbui.nutritrack.ui.screens
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.alexbui.nutritrack.BuildConfig
 import com.alexbui.nutritrack.data.AppDatabase
 import com.alexbui.nutritrack.data.foodquestionnaire.FoodQuestionnaire
 import com.alexbui.nutritrack.data.nutricoach.NutriCoachTip
 import com.alexbui.nutritrack.data.patient.Patient
-import com.google.ai.client.generativeai.GenerativeModel
+import com.google.firebase.Firebase
+import com.google.firebase.ai.ai
+import com.google.firebase.ai.type.GenerativeBackend
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig
+import com.google.firebase.remoteconfig.remoteConfigSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 /**
  * GenAIViewModel manages prompts to the Generative AI model (Gemini) and exposes state to the UI
@@ -20,16 +24,38 @@ import kotlinx.coroutines.launch
  * Handles two prompt types:
  * - Patient view: personalized fruit improvement message
  * - Clinician view: insight pattern generation across multiple users
+ *
+ * Model name is fetched dynamically via Firebase Remote Config to avoid
+ * hardcoding and allow updates without redeployment
  */
 class GenAIViewModel : ViewModel() {
     private val _uiState = MutableStateFlow<UIState>(UIState.Initial)
     val uiState: StateFlow<UIState> = _uiState
 
-    private val generativeModel = GenerativeModel(
-        modelName = "gemini-1.5-flash",
-        apiKey = BuildConfig.apiKey
-    )
+    // Remote Config instance with 1 hour cache expiry
+    private val remoteConfig = FirebaseRemoteConfig.getInstance().also { config ->
+        config.setConfigSettingsAsync(
+            remoteConfigSettings { minimumFetchIntervalInSeconds = 3600 }
+        )
+        // Fallback default if Remote Config fetch fails
+        config.setDefaultsAsync(mapOf("gemini_model_name" to "gemini-2.5-flash-lite"))
+    }
 
+    /**
+     * Fetches the model name from Remote Config and returns a GenerativeModel instance
+     * Falls back to default if fetch fails
+     */
+    private suspend fun getGenerativeModel() = try {
+        remoteConfig.fetchAndActivate().await()
+        val modelName = remoteConfig.getString("gemini_model_name")
+        Firebase.ai(backend = GenerativeBackend.googleAI())
+            .generativeModel(modelName)
+    } catch (_: Exception) {
+
+        // Fallback to hardcoded default if Remote Config fails
+        Firebase.ai(backend = GenerativeBackend.googleAI())
+            .generativeModel("gemini-2.5-flash-lite")
+    }
 
     /**
      * sendPromptPatient generates a personalized fruit tip using a single patient's data
@@ -41,7 +67,7 @@ class GenAIViewModel : ViewModel() {
     fun sendPromptPatient(patient: Patient, foodAnswers: FoodQuestionnaire?, db: AppDatabase) {
         _uiState.value = UIState.Loading
 
-        //buildString constructs a prompt string using patient scores + questionnaire data
+        // buildString constructs a prompt string using patient scores + questionnaire data
         val userId = patient.userId
         val prompt = buildString {
             append("Generate a short encouraging message to help someone improve their fruit intake.\n\n")
@@ -60,7 +86,7 @@ class GenAIViewModel : ViewModel() {
             append("- Sugar: ${patient.sugarScore}\n")
             append("- Water: ${patient.alcoholScore}\n")
 
-            //nullable append questionnaire responses if available
+            // Nullable append questionnaire responses if available
             foodAnswers?.let {
                 append("\nQuestionnaire data:\n")
                 append("- Preferred foods: ${it.selectedFoods}\n")
@@ -73,25 +99,20 @@ class GenAIViewModel : ViewModel() {
             append("\nUse the data above to make the message relevant and motivating. Make it about 300-350 characters, and can make it colorful by adding some emojis aside.")
         }
 
-        //send prompt to Gemini API
+        // Send prompt to Gemini API
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val response = generativeModel.generateContent(prompt)
+                val model = getGenerativeModel()
+                val response = model.generateContent(prompt)
                 val output = response.text ?: "No output"
-
-                //update UI state with result
                 _uiState.value = UIState.Success(output)
-
-                //save result to NutriCoachTip table
                 val tip = NutriCoachTip(userId = userId, tipText = output)
                 db.nutriCoachTipDao().insertTip(tip)
-
             } catch (e: Exception) {
                 _uiState.value = UIState.Error(e.message ?: "Unknown error")
             }
         }
     }
-
 
     /**
      * sendPromptClinical generates 3 clinical insight patterns using all patient data
@@ -103,11 +124,11 @@ class GenAIViewModel : ViewModel() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
 
-                //get database instance, and fetch all patients from Room DB
+                // Get database instance, and fetch all patients from Room DB
                 val db = AppDatabase.getDatabase(context)
                 val patients = db.patientDao().getAllPatients()
 
-                //buildString constructs a clinical prompt string using multiple patients data
+                // buildString constructs a clinical prompt string using multiple patients data
                 val prompt = buildString {
                     append("You are analyzing nutritional data from a dataset.\n")
                     append("Each user has multiple scores (e.g., fruits, vegetables, saturated fat, sugar, etc.) and a total HEIFA score.\n")
@@ -126,8 +147,9 @@ class GenAIViewModel : ViewModel() {
                     append("\nSkip any introduction or greetings.")
                 }
 
-                //send prompt to Gemini API, and update UI state with response
-                val response = generativeModel.generateContent(prompt)
+                // Send prompt to Gemini API, and update UI state with response
+                val model = getGenerativeModel()
+                val response = model.generateContent(prompt)
                 val output = response.text ?: "No output"
                 _uiState.value = UIState.Success(output)
 
