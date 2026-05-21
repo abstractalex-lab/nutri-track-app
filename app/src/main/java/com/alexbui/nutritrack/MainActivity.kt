@@ -32,12 +32,14 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.alexbui.nutritrack.data.AppDatabase
+import com.alexbui.nutritrack.data.PasswordUtils
 import com.alexbui.nutritrack.data.seed.CsvSeeder
 import com.alexbui.nutritrack.ui.screens.HomeScreen
 import com.alexbui.nutritrack.ui.screens.LoginScreen
 import com.alexbui.nutritrack.ui.screens.QuestionnaireScreen
 import com.alexbui.nutritrack.ui.theme.NutriTrackTheme
 import kotlinx.coroutines.launch
+import androidx.core.content.edit
 
 /**
  * MainActivity serves as the entry point for the NutriTrack app
@@ -67,6 +69,20 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             val db = AppDatabase.getDatabase(applicationContext)
             CsvSeeder(applicationContext, db).seedIfNeeded()
+
+            //one-time migration: hash all plaintext passwords on first launch
+            val migrationPrefs = getSharedPreferences("migration_prefs", MODE_PRIVATE)
+            val passwordsMigrated = migrationPrefs.getBoolean("passwords_hashed", false)
+            if (!passwordsMigrated) {
+                val patients = db.patientDao().getAllPatients()
+                patients.forEach { patient ->
+                    val stored = patient.password
+                    if (!stored.isNullOrEmpty() && PasswordUtils.isPlaintext(stored)) {
+                        db.patientDao().setPasswordForUser(patient.userId, PasswordUtils.hashPassword(stored))
+                    }
+                }
+                migrationPrefs.edit { putBoolean("passwords_hashed", true) }
+            }
         }
 
         //enable full-screen layout

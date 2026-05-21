@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.alexbui.nutritrack.data.AppDatabase
+import com.alexbui.nutritrack.data.PasswordUtils
 import com.alexbui.nutritrack.data.patient.PatientViewModel
 import com.alexbui.nutritrack.data.patient.PatientViewModelFactory
 import kotlinx.coroutines.launch
@@ -144,8 +145,18 @@ fun ChangePasswordScreen(navController: NavController, userId: String) {
                 scope.launch {
                     val patient = db.patientDao().getPatientById(userId)
 
-                    //DB check of current password
-                    if (patient == null || patient.password != oldPassword) {
+                    //DB check of current password with lazy migration
+                    val storedPassword = patient?.password
+                    if (storedPassword.isNullOrEmpty()) {
+                        oldPasswordError = true
+                        return@launch
+                    }
+                    val isOldPasswordCorrect = if (PasswordUtils.isPlaintext(storedPassword)) {
+                        storedPassword == oldPassword
+                    } else {
+                        PasswordUtils.verifyPassword(oldPassword, storedPassword)
+                    }
+                    if (!isOldPasswordCorrect) {
                         oldPasswordError = true
                         return@launch
                     }
@@ -163,7 +174,7 @@ fun ChangePasswordScreen(navController: NavController, userId: String) {
                     }
 
                     //apply and update password
-                    patientViewModel.setPassword(userId, newPassword)
+                    patientViewModel.setPassword(userId, PasswordUtils.hashPassword(newPassword))
                     Toast.makeText(context, "Password changed successfully!", Toast.LENGTH_SHORT).show()
                     navController.popBackStack()
                 }

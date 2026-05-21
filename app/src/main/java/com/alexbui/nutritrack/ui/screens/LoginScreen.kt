@@ -28,6 +28,7 @@ import com.alexbui.nutritrack.data.patient.PatientViewModelFactory
 import com.alexbui.nutritrack.data.foodquestionnaire.FoodQuestionnaireViewModelFactory
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
+import com.alexbui.nutritrack.data.PasswordUtils
 import com.alexbui.nutritrack.data.patient.Patient
 import kotlinx.coroutines.delay
 
@@ -300,12 +301,25 @@ fun LoginScreen(navController: NavHostController) {
                                 if (patient == null || patient.password.isNullOrEmpty()) {
                                     unclaimedAccountError = true
                                     Toast.makeText(context, "This account has not been claimed yet", Toast.LENGTH_SHORT).show()
-                                } else if (patient.password != password) {
-                                    loginFailed = true
                                 } else {
-                                    prefs.edit(commit = true) { putString("userId", selectedUserId) }
-                                    val hasFilled = foodQuestionnaireViewModel.hasUserFilled(selectedUserId)
-                                    navController.navigate(if (hasFilled) "home" else "questionnaire/$selectedUserId")
+                                    val storedPassword = patient.password!!
+                                    if (PasswordUtils.isPlaintext(storedPassword)) {
+                                        // Plaintext — lazy migrate to hash
+                                        if (storedPassword != password) {
+                                            loginFailed = true
+                                        } else {
+                                            viewModel.setPassword(selectedUserId, PasswordUtils.hashPassword(password))
+                                            prefs.edit(commit = true) { putString("userId", selectedUserId) }
+                                            val hasFilled = foodQuestionnaireViewModel.hasUserFilled(selectedUserId)
+                                            navController.navigate(if (hasFilled) "home" else "questionnaire/$selectedUserId")
+                                        }
+                                    } else if (!PasswordUtils.verifyPassword(password, storedPassword)) {
+                                        loginFailed = true
+                                    } else {
+                                        prefs.edit(commit = true) { putString("userId", selectedUserId) }
+                                        val hasFilled = foodQuestionnaireViewModel.hasUserFilled(selectedUserId)
+                                        navController.navigate(if (hasFilled) "home" else "questionnaire/$selectedUserId")
+                                    }
                                 }
                             } else {
                                 if (patient == null) {
@@ -328,9 +342,9 @@ fun LoginScreen(navController: NavHostController) {
 
                                 viewModel.claimAccount(
                                     userId = selectedUserId,
-                                    name = if (name.isBlank()) null else name,
+                                    name = name.ifBlank { null },
                                     phone = phone,
-                                    password = password
+                                    password = PasswordUtils.hashPassword(password)
                                 )
 
                                 var claimedPatient: Patient? = null
