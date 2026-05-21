@@ -64,7 +64,7 @@ class GenAIViewModel : ViewModel() {
      * @param foodAnswers associated FoodQuestionnaire entry, if any
      * @param db Room database instance (used to persist tip)
      */
-    fun sendPromptPatient(patient: Patient, foodAnswers: FoodQuestionnaire?, db: AppDatabase) {
+    fun sendPromptPatient(patient: Patient, foodAnswers: FoodQuestionnaire?, db: AppDatabase, searchedFruit: String? = null) {
         _uiState.value = UIState.Loading
 
         // buildString constructs a prompt string using patient scores + questionnaire data
@@ -96,6 +96,10 @@ class GenAIViewModel : ViewModel() {
                 append("- Main meal time: ${it.mealTime}\n")
             }
 
+            searchedFruit?.let {
+                append("\nThe user recently searched for: $it\n")
+                append("If appropriate, incorporate this fruit into your suggestion.\n")
+            }
             append("\nUse the data above to make the message relevant and motivating. Make it about 300-350 characters, and can make it colorful by adding some emojis aside.")
         }
 

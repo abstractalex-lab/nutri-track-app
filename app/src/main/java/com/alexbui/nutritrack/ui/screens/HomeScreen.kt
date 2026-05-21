@@ -54,6 +54,8 @@ fun HomeScreen(appNavController: NavHostController) {
     val navControllerInner = rememberNavController()
     val currentRoute by navControllerInner.currentBackStackEntryAsState()
     val isOnHomeTab = currentRoute?.destination?.route == "home"
+    val aiViewModel = remember { GenAIViewModel() }
+    val coachViewModel = remember { NutriCoachViewModel() }
 
     //scaffold with bottom navigation bar
     Scaffold(
@@ -83,7 +85,10 @@ fun HomeScreen(appNavController: NavHostController) {
             }
 
             composable("nutricoach") {
-                NutriCoachContent()
+                NutriCoachContent(
+                    aiViewModel = aiViewModel,
+                    coachViewModel = coachViewModel
+                )
             }
 
             composable("settings") {
@@ -175,7 +180,7 @@ fun HomeContent(innerNavController: NavHostController, appNavController: NavHost
     val context = LocalContext.current
     val prefs = context.getSharedPreferences("login_prefs", Context.MODE_PRIVATE)
     val userId = prefs.getString("userId", "") ?: ""
-    var patient: Patient? by remember { mutableStateOf<Patient?>(null) }
+    var patient: Patient? by remember { mutableStateOf(null) }
 
     //load patient data from DB on screen entry
     LaunchedEffect(userId) {
@@ -376,7 +381,7 @@ fun InsightsContent(innerNavController: NavHostController, appNavController: Nav
             Spacer(modifier = Modifier.height(36.dp))
         }
 
-        //total score summary displays in a progress bar-styled
+        //total score summary displays in progress bar-styled
         Text("Total Food Quality Score", fontWeight = FontWeight.Bold, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -458,12 +463,9 @@ fun InsightsContent(innerNavController: NavHostController, appNavController: Nav
  *
  */
 @Composable
-fun NutriCoachContent() {
+fun NutriCoachContent(aiViewModel: GenAIViewModel, coachViewModel: NutriCoachViewModel) {
     val context = LocalContext.current
-    val aiViewModel = remember { GenAIViewModel() }
-    val coachViewModel = remember { NutriCoachViewModel() }
     val uiState by aiViewModel.uiState.collectAsState()
-
     var questionnaire by remember { mutableStateOf<FoodQuestionnaire?>(null) }
     var fruitQuery by remember { mutableStateOf("") }
 
@@ -646,7 +648,10 @@ fun NutriCoachContent() {
         ){
             Button(
                 onClick = {
-                    patient?.let { p -> aiViewModel.sendPromptPatient(p, questionnaire, db) }
+                    patient?.let { p ->
+                        val fruit = coachViewModel.fruitInfo.value?.name
+                        aiViewModel.sendPromptPatient(p, questionnaire, db, fruit)
+                    }
                 },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(12.dp)
