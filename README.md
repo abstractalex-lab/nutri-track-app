@@ -1,4 +1,4 @@
-# NutriTrack 🥗
+# NutriTrack
 
 > *A personalised Android nutrition insights platform — because eating well shouldn't be complicated.*
 
