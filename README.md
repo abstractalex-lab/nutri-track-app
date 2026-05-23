@@ -60,7 +60,7 @@ The Room database seeds automatically from the bundled CSV on first launch — n
 
 ### 🔐 Authentication & Session Management
 - First-time account claim flow: users verify via UserID + phone number, then set a name and password
-- Passwords stored as **SHA-256 hashes with random salt** — never in plaintext
+- Passwords stored as **SHA-256 hashes with random salt**
 - Automatic one-time migration of existing plaintext passwords on first launch
 - Lazy migration on login as a safety net for any remaining plaintext accounts
 - Session persists across app restarts until the user manually logs out
