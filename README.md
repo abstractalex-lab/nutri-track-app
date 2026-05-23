@@ -35,7 +35,7 @@ Student ID: 34662901 | Lab: 09_OnCampus | [GitHub](https://github.com/alexbui)
 
 ## ⬇️ Getting Started
 
-> ℹ️ Originally submitted as an university project, now actively maintained and improved post-submission.
+> ℹ️ Originally submitted as an university project, now maintained and improved post-submission.
 
 **Requirements:** Android Studio Hedgehog or later, Android API 30+
 
