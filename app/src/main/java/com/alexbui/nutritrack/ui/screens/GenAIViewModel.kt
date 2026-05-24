@@ -58,6 +58,31 @@ class GenAIViewModel : ViewModel() {
     }
 
     /**
+     * Maps raw exceptions to user-friendly error messages
+     * Prevents internal implementation details leaking to UI
+     *
+     * @param e the caught exception to map
+     * @return user-friendly error message string
+     */
+    private fun friendlyError(e: Exception): String {
+        val msg = e.message?.lowercase() ?: ""
+        return when {
+            "quota" in msg || "rate" in msg || "429" in msg ->
+                "You've sent too many requests. Please wait a moment and try again."
+            "network" in msg || "unable to resolve" in msg || "failed to connect" in msg ->
+                "No internet connection. Please check your network and try again."
+            "timeout" in msg ->
+                "The request timed out. Please try again."
+            "permission" in msg || "403" in msg ->
+                "Access denied. Please check your Firebase configuration."
+            "model" in msg && "not found" in msg ->
+                "AI model unavailable. Please try again later."
+            else ->
+                "Something went wrong. Please try again."
+        }
+    }
+
+    /**
      * sendPromptPatient generates a personalized fruit tip using a single patient's data
      *
      * @param patient Patient object from Room
@@ -113,7 +138,8 @@ class GenAIViewModel : ViewModel() {
                 val tip = NutriCoachTip(userId = userId, tipText = output)
                 db.nutriCoachTipDao().insertTip(tip)
             } catch (e: Exception) {
-                _uiState.value = UIState.Error(e.message ?: "Unknown error")
+                android.util.Log.e("GenAIViewModel", "sendPromptPatient failed: ${e.message}", e)
+                _uiState.value = UIState.Error(friendlyError(e))
             }
         }
     }
@@ -158,7 +184,8 @@ class GenAIViewModel : ViewModel() {
                 _uiState.value = UIState.Success(output)
 
             } catch (e: Exception) {
-                _uiState.value = UIState.Error(e.message ?: "Unknown error")
+                android.util.Log.e("GenAIViewModel", "sendPromptClinical failed: ${e.message}", e)
+                _uiState.value = UIState.Error(friendlyError(e))
             }
         }
     }

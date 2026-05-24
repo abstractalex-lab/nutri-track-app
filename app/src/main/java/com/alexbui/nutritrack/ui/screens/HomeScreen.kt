@@ -687,7 +687,29 @@ fun NutriCoachContent(aiViewModel: GenAIViewModel, coachViewModel: NutriCoachVie
                 )
             }
             is UIState.Error -> {
-                Text("Error: ${(uiState as UIState.Error).message}", color = Color.Red)
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF8E1))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = "Warning",
+                            tint = Color(0xFFF9A825),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = (uiState as UIState.Error).message,
+                            color = Color(0xFF7A5C00),
+                            fontSize = 14.sp
+                        )
+                    }
+                }
             }
             else -> {}
         }
@@ -889,7 +911,7 @@ fun SettingsContent(innerNavController: NavHostController, appNavController: Nav
         Spacer(modifier = Modifier.height(24.dp))
 
         //app footer (for future uses)
-        Text("Version 1.1.0", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("Version 2.1.0", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
