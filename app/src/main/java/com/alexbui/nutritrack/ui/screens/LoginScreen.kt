@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,6 +27,7 @@ import com.alexbui.nutritrack.data.foodquestionnaire.FoodQuestionnaireViewModelF
 import kotlinx.coroutines.launch
 import androidx.core.content.edit
 import com.alexbui.nutritrack.data.PasswordUtils
+import com.alexbui.nutritrack.data.PhoneUtils
 import com.alexbui.nutritrack.data.patient.Patient
 import kotlinx.coroutines.delay
 
@@ -57,6 +56,7 @@ enum class LoginMode {
  * @param navController used to navigate to Home or Questionnaire screen
  *
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(navController: NavHostController) {
     val context = LocalContext.current
@@ -83,6 +83,7 @@ fun LoginScreen(navController: NavHostController) {
     //error flags
     var userIdError by remember { mutableStateOf(false) }
     var phoneError by remember { mutableStateOf(false) }
+    var phoneAmbiguousError by remember { mutableStateOf(false) }
     var passwordError by remember { mutableStateOf(false) }
     var passwordMismatchError by remember { mutableStateOf(false) }
     var unclaimedAccountError by remember { mutableStateOf(false) }
@@ -97,6 +98,7 @@ fun LoginScreen(navController: NavHostController) {
         name = ""
         userIdError = false
         phoneError = false
+        phoneAmbiguousError = false
         passwordError = false
         passwordMismatchError = false
         unclaimedAccountError = false
@@ -149,7 +151,11 @@ fun LoginScreen(navController: NavHostController) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 //user ID Dropdown
-                Box(modifier = Modifier.fillMaxWidth()) {
+                ExposedDropdownMenuBox(
+                    expanded = isDropdownExpanded,
+                    onExpandedChange = { isDropdownExpanded = it },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
                     OutlinedTextField(
                         value = selectedUserId,
                         onValueChange = {},
@@ -157,20 +163,17 @@ fun LoginScreen(navController: NavHostController) {
                         isError = userIdError || unclaimedAccountError,
                         label = { Text("Select User ID") },
                         trailingIcon = {
-                            Icon(Icons.Default.ArrowDropDown, contentDescription = null,
-                                modifier = Modifier.clickable { isDropdownExpanded = true })
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = isDropdownExpanded)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { isDropdownExpanded = true }
+                            .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                     )
 
-                    DropdownMenu(
+                    ExposedDropdownMenu(
                         expanded = isDropdownExpanded,
                         onDismissRequest = { isDropdownExpanded = false },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 280.dp)
+                        modifier = Modifier.heightIn(max = 280.dp)
                     ) {
                         userIds.sortedBy { it.toIntOrNull() ?: Int.MAX_VALUE }.forEach { id ->
                             DropdownMenuItem(
@@ -210,7 +213,7 @@ fun LoginScreen(navController: NavHostController) {
                     OutlinedTextField(
                         value = phone,
                         onValueChange = {
-                            if (it.all { char -> char.isDigit() }) {
+                            if (it.all { char -> char.isDigit() || char == '+' }) {
                                 phone = it
                                 phoneError = false
                             }
@@ -222,7 +225,13 @@ fun LoginScreen(navController: NavHostController) {
                         singleLine = true
                     )
                     if (phoneError) {
-                        Text("Phone number is incorrect or empty", color = MaterialTheme.colorScheme.error)
+                        Text(
+                            if (phoneAmbiguousError)
+                                "Please enter your full phone number including country code (e.g. +61436567330)"
+                            else
+                                "Phone number is incorrect or empty",
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -334,8 +343,19 @@ fun LoginScreen(navController: NavHostController) {
                                     return@launch
                                 }
 
-                                if (patient.phoneNumber != phone) {
+                                val allPhoneNumbers = viewModel.getAllPhoneNumbers()
+                                val phoneDigits = phone.filter { it.isDigit() }
+                                val isLocalFormat = phoneDigits.startsWith("0")
+                                val storedDigits = (patient.phoneNumber ?: "").filter { it.isDigit() }
+                                val isAustralianStored = storedDigits.startsWith("61")
+
+                                if (isLocalFormat && (!isAustralianStored || PhoneUtils.isAmbiguous(phoneDigits, allPhoneNumbers))) {
                                     phoneError = true
+                                    phoneAmbiguousError = true
+                                    return@launch
+                                } else if (!PhoneUtils.phonesMatch(phone, patient.phoneNumber ?: "", allPhoneNumbers)) {
+                                    phoneError = true
+                                    phoneAmbiguousError = false
                                     Toast.makeText(context, "Phone number does not match our records", Toast.LENGTH_SHORT).show()
                                     return@launch
                                 }
@@ -343,7 +363,7 @@ fun LoginScreen(navController: NavHostController) {
                                 viewModel.claimAccount(
                                     userId = selectedUserId,
                                     name = name.ifBlank { null },
-                                    phone = phone,
+                                    phone = PhoneUtils.normaliseForStorage(phone),
                                     password = PasswordUtils.hashPassword(password)
                                 )
 

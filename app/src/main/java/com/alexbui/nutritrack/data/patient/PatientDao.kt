@@ -27,6 +27,12 @@ interface PatientDao {
     suspend fun setPasswordForUser(userId: String, password: String)
 
     /**
+     * Fetch all phone numbers from the patients table
+     */
+    @Query("SELECT phoneNumber FROM patients WHERE phoneNumber IS NOT NULL")
+    suspend fun getAllPhoneNumbers(): List<String>
+
+    /**
      * Set name, phone number, and password when user claims their account
      *
      */

@@ -34,6 +34,16 @@ class PatientViewModel(private val db: AppDatabase) : ViewModel() {
     }
 
     /**
+     * Retrieve all phone numbers stored in the database
+     * Used for ambiguity check in phone number normalization
+     *
+     * @return list of all stored phone number strings
+     */
+    suspend fun getAllPhoneNumbers(): List<String> {
+        return db.patientDao().getAllPhoneNumbers()
+    }
+
+    /**
      * Claim a user's account by assigning name, phone, and password
      *
      * @param userId ID to claim
