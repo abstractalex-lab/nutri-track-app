@@ -168,11 +168,11 @@ fun QuestionnaireScreen(navController: NavController, userId: String) {
 
                 LazyColumn(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .weight(1f)
                         .padding(16.dp),
 
                     //for nav bar clearance
-                    contentPadding = PaddingValues(bottom = 40.dp),
+                    contentPadding = PaddingValues(bottom = 20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
 
@@ -439,87 +439,89 @@ fun QuestionnaireScreen(navController: NavController, userId: String) {
                         }
                         Spacer(modifier = Modifier.height(12.dp))
                     }
+                }
 
-                    //setup submit behaviour
-                    item {
-                        Button(
-                            onClick = {
-                                showErrors = true
-                                mealTimeError = false
-                                sleepTimeError = false
-                                wakeTimeError = false
+                // setup submit button section
+                Surface(
+                    shadowElevation = 2.dp,
+//                    tonalElevation = 2.dp,
+                ) {
+                    Button(
+                        onClick = {
+                            showErrors = true
+                            mealTimeError = false
+                            sleepTimeError = false
+                            wakeTimeError = false
 
-                                //initiate showing errors on any invalid entry fields
-                                val noFoodSelected = selectedFoods.values.none { it }
-                                if (dropdownPersona.isBlank() || mealTime.isBlank() || sleepTime.isBlank() || wakeTime.isBlank() || noFoodSelected) {
-                                    Toast.makeText(context, "Please complete all required fields.", Toast.LENGTH_SHORT).show()
-                                    return@Button
-                                }
+                            val noFoodSelected = selectedFoods.values.none { it }
+                            if (dropdownPersona.isBlank() || mealTime.isBlank() || sleepTime.isBlank() || wakeTime.isBlank() || noFoodSelected) {
+                                Toast.makeText(
+                                    context,
+                                    "Please complete all required fields.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button
+                            }
 
-                                //check for any duplicated time
-                                if (mealTime == sleepTime) {
-                                    mealTimeError = true
-                                    sleepTimeError = true
-                                }
-                                if (mealTime == wakeTime) {
-                                    mealTimeError = true
-                                    wakeTimeError = true
-                                }
-                                if (sleepTime == wakeTime) {
-                                    sleepTimeError = true
-                                    wakeTimeError = true
-                                }
+                            if (mealTime == sleepTime) {
+                                mealTimeError = true; sleepTimeError = true
+                            }
+                            if (mealTime == wakeTime) {
+                                mealTimeError = true; wakeTimeError = true
+                            }
+                            if (sleepTime == wakeTime) {
+                                sleepTimeError = true; wakeTimeError = true
+                            }
 
-                                //block submit if any error
-                                if (mealTimeError || sleepTimeError || wakeTimeError) {
-                                    Toast.makeText(context, "Meal, Sleep, and Wake times must be different", Toast.LENGTH_SHORT).show()
-                                    return@Button
-                                }
+                            if (mealTimeError || sleepTimeError || wakeTimeError) {
+                                Toast.makeText(
+                                    context,
+                                    "Meal, Sleep, and Wake times must be different",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                return@Button
+                            }
 
-                                coroutineScope.launch {
+                            coroutineScope.launch {
+                                val patientDao = AppDatabase.getDatabase(context).patientDao()
+                                val exists = patientDao.getPatientById(userId) != null
 
-                                    //get DAO reference from Room, check if patient exists
-                                    val patientDao = AppDatabase.getDatabase(context).patientDao()
-                                    val exists = patientDao.getPatientById(userId) != null
-
-                                    if (!exists) {
-
-                                        //show error if patient record not found (data corruption or manual tampering)
-                                        Toast.makeText(context, "Error: Patient record not found. Please re-login.", Toast.LENGTH_LONG).show()
-
-                                        //navigate to login and clear stack
-                                        navController.navigate("login") {
-                                            navController.navigate("login") {
-                                                popUpTo("home") { inclusive = true }
-                                            }
-                                        }
-                                        return@launch
+                                if (!exists) {
+                                    Toast.makeText(
+                                        context,
+                                        "Error: Patient record not found. Please re-login.",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                    navController.navigate("login") {
+                                        popUpTo("home") { inclusive = true }
                                     }
+                                    return@launch
+                                }
 
-                                    //store questionnaire response into Room DB
-                                    viewModel.insertOrUpdate(
-                                        FoodQuestionnaire(
-                                            userId = userId,
-                                            persona = dropdownPersona,
-                                            mealTime = mealTime,
-                                            sleepTime = sleepTime,
-                                            wakeTime = wakeTime,
-                                            selectedFoods = selectedFoods.filterValues { it }.keys.joinToString(", ")
+                                viewModel.insertOrUpdate(
+                                    FoodQuestionnaire(
+                                        userId = userId,
+                                        persona = dropdownPersona,
+                                        mealTime = mealTime,
+                                        sleepTime = sleepTime,
+                                        wakeTime = wakeTime,
+                                        selectedFoods = selectedFoods.filterValues { it }.keys.joinToString(
+                                            ", "
                                         )
                                     )
+                                )
 
-                                    //navigate to home and clear back stack
-                                    navController.navigate("home") {
-                                        navController.navigate("home") {
-                                            popUpTo("home") { inclusive = true }
-                                        }
-                                    }
+                                navController.navigate("home") {
+                                    popUpTo("home") { inclusive = true }
                                 }
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text("Submit")
-                        }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        Text("Submit")
                     }
                 }
             }
