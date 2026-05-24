@@ -1,7 +1,6 @@
 package com.alexbui.nutritrack.ui.screens
 
 import android.annotation.SuppressLint
-import android.app.TimePickerDialog
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
@@ -10,6 +9,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
@@ -18,6 +20,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,6 +51,7 @@ import java.util.*
  * @param userId identifies the logged-in patient
  *
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @SuppressLint("DiscouragedApi")
 @Composable
 fun QuestionnaireScreen(navController: NavController, userId: String) {
@@ -57,6 +62,7 @@ fun QuestionnaireScreen(navController: NavController, userId: String) {
         navController.previousBackStackEntry?.destination?.route
     }
     val coroutineScope = rememberCoroutineScope()
+    val is24Hour = android.text.format.DateFormat.is24HourFormat(context)
 
     //define list of food and persona options, descriptions shown when persona info button is clicked
     val foodOptions = listOf("Fruits", "Vegetables", "Grains", "Red Meat", "Seafood", "Poultry", "Fish", "Eggs", "Nuts/Seeds")
@@ -180,7 +186,7 @@ fun QuestionnaireScreen(navController: NavController, userId: String) {
                         Row(modifier = Modifier.fillMaxWidth()) {
                             rowItems.forEach { item ->
 
-                                //setup each cell behaviour, highlight red if none are checked
+                                //setup each cell behavior, highlight red if none are checked
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.weight(1f)
@@ -241,7 +247,11 @@ fun QuestionnaireScreen(navController: NavController, userId: String) {
                         Spacer(modifier = Modifier.height(8.dp))
 
                         //box allow inputs from both persona and drop-down, highlight red if unselected
-                        Box(Modifier.fillMaxWidth()) {
+                        ExposedDropdownMenuBox(
+                            expanded = personaDropdownExpanded,
+                            onExpandedChange = { personaDropdownExpanded = it },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             OutlinedTextField(
                                 isError = showErrors && dropdownPersona.isBlank(),
                                 value = dropdownPersona,
@@ -249,23 +259,17 @@ fun QuestionnaireScreen(navController: NavController, userId: String) {
                                 readOnly = true,
                                 label = { Text("Select Persona") },
                                 trailingIcon = {
-                                    Icon(Icons.Default.ArrowDropDown, null, Modifier.clickable {
-                                        personaDropdownExpanded = true
-                                    })
+                                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = personaDropdownExpanded)
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { personaDropdownExpanded = true }
+                                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                             )
 
-                            //drop-down menu behaviour
-                            DropdownMenu(
+                            ExposedDropdownMenu(
                                 expanded = personaDropdownExpanded,
-                                onDismissRequest = { personaDropdownExpanded = false },
-                                modifier = Modifier.fillMaxWidth()
+                                onDismissRequest = { personaDropdownExpanded = false }
                             ) {
-
-                                //loops through each persona option and display them
                                 personaOptions.forEach {
                                     DropdownMenuItem(
                                         text = { Text(it) },
@@ -288,20 +292,92 @@ fun QuestionnaireScreen(navController: NavController, userId: String) {
                         Text("Timings", fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        //trigger the time selection dialog
+                        //trigger the time selection input
                         if (showTimePickerFor.value.isNotEmpty()) {
                             val cal = Calendar.getInstance()
-                            TimePickerDialog(context, { _, hour, min ->
-                                val t = "%02d:%02d".format(hour, min)
-                                when (showTimePickerFor.value) {
-                                    "meal" -> mealTime = t
-                                    "sleep" -> sleepTime = t
-                                    "wake" -> wakeTime = t
+                            val existingTime = when (showTimePickerFor.value) {
+                                "meal" -> mealTime
+                                "sleep" -> sleepTime
+                                "wake" -> wakeTime
+                                else -> ""
+                            }
+                            val initialHour = if (existingTime.isNotBlank()) existingTime.split(":")[0].toIntOrNull() ?: cal.get(Calendar.HOUR_OF_DAY) else cal.get(Calendar.HOUR_OF_DAY)
+                            val initialMinute = if (existingTime.isNotBlank()) existingTime.split(":")[1].toIntOrNull() ?: cal.get(Calendar.MINUTE) else cal.get(Calendar.MINUTE)
+
+                            val timePickerState = rememberTimePickerState(
+                                initialHour = initialHour,
+                                initialMinute = initialMinute,
+                                is24Hour = is24Hour
+                            )
+
+                            AlertDialog(
+                                onDismissRequest = { showTimePickerFor.value = "" },
+                                title = {
+                                    Text(
+                                        when (showTimePickerFor.value) {
+                                            "meal" -> "Select Meal Time"
+                                            "sleep" -> "Select Sleep Time"
+                                            "wake" -> "Select Wake Time"
+                                            else -> "Select Time"
+                                        }
+                                    )
+                                },
+                                text = {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        TimeInput(state = timePickerState)
+                                    }
+                                },
+                                confirmButton = {
+                                    Button(onClick = {
+                                        val t = "%02d:%02d".format(timePickerState.hour, timePickerState.minute)
+                                        when (showTimePickerFor.value) {
+                                            "meal" -> mealTime = t
+                                            "sleep" -> sleepTime = t
+                                            "wake" -> wakeTime = t
+                                        }
+                                        showTimePickerFor.value = ""
+                                    }) {
+                                        Text("Confirm")
+                                    }
+                                },
+                                dismissButton = {
+                                    OutlinedButton(onClick = { showTimePickerFor.value = "" }) {
+                                        Text("Cancel")
+                                    }
                                 }
-                                showTimePickerFor.value = ""
-                            }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), true).apply {
-                                setOnCancelListener { showTimePickerFor.value = "" }
-                            }.show()
+                            )
+                        }
+
+                        /**
+                         * Formats a stored 24-hour time string for display based on device locale preference
+                         *
+                         * Storage format is always HH:mm (24-hour) for consistency with AI prompts and DB.
+                         * Display format follows the device's time format setting.
+                         *
+                         * @param time the stored time string in HH:mm 24-hour format
+                         * @param is24Hour whether the device is set to 24-hour format
+                         * @return formatted time string for display (e.g. "18:45" or "6:45 PM")
+                         */
+                        fun formatDisplayTime(time: String, is24Hour: Boolean): String {
+                            if (time.isBlank()) return ""
+                            return try {
+                                val parts = time.split(":")
+                                val hour = parts[0].toInt()
+                                val minute = parts[1].toInt()
+                                if (is24Hour) {
+                                    "%02d:%02d".format(hour, minute)
+                                } else {
+                                    val amPm = if (hour < 12) "AM" else "PM"
+                                    val displayHour = when {
+                                        hour == 0 -> 12
+                                        hour > 12 -> hour - 12
+                                        else -> hour
+                                    }
+                                    "%d:%02d %s".format(displayHour, minute, amPm)
+                                }
+                            } catch (_: Exception) {
+                                time
+                            }
                         }
 
                         /**
@@ -326,26 +402,39 @@ fun QuestionnaireScreen(navController: NavController, userId: String) {
                                 trailingIcon = {
                                     Icon(
                                         imageVector = Icons.Default.Edit,
-                                        contentDescription = "Time Picker",
-                                        modifier = Modifier.clickable(onClick = onClick)
+                                        contentDescription = "Time Picker"
                                     )
                                 },
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .pointerInput(Unit) {
+                                        awaitPointerEventScope {
+                                            while (true) {
+                                                val event = awaitPointerEvent()
+                                                if (event.type == PointerEventType.Press) {
+                                                    onClick()
+                                                }
+                                            }
+                                        }
+                                    }
                             )
                         }
 
                         //invoke the timeField function to trigger time dialogue upon clicking the box
-                        timeField("What time of day approx. do you normally eat your biggest meal?", mealTime, showErrors && mealTime.isBlank() || mealTimeError) {
+                        timeField("What time of day approx. do you normally eat your biggest meal?",
+                            formatDisplayTime(mealTime, is24Hour), showErrors && mealTime.isBlank() || mealTimeError) {
                             showTimePickerFor.value = "meal"
                         }
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        timeField("What time of day approx. do you go to sleep at night?", sleepTime, showErrors && sleepTime.isBlank() || sleepTimeError) {
+                        timeField("What time of day approx. do you go to sleep at night?",
+                            formatDisplayTime(sleepTime, is24Hour), showErrors && sleepTime.isBlank() || sleepTimeError) {
                             showTimePickerFor.value = "sleep"
                         }
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        timeField("What time of day approx. do you wake up in the morning?", wakeTime, showErrors && wakeTime.isBlank() || wakeTimeError) {
+                        timeField("What time of day approx. do you wake up in the morning?",
+                            formatDisplayTime(wakeTime, is24Hour), showErrors && wakeTime.isBlank() || wakeTimeError) {
                             showTimePickerFor.value = "wake"
                         }
                         Spacer(modifier = Modifier.height(12.dp))
