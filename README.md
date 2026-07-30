@@ -20,12 +20,12 @@ This was completed as **Assignment 3 (30%)** for **FIT2081 – Mobile App Develo
 
 ### 🌟 Highlights
 
-- 🔐 **Multi-user authentication** with persistent sessions and SHA-256 hashed passwords
-- 🤖 **AI-powered NutriCoach** using Gemini via Firebase AI Logic, personalised to each user's HEIFA score profile
-- 🍓 **Live fruit nutrition data** via the FruityVice API, conditionally shown based on dietary scores
-- 🏥 **Clinician Admin Dashboard** with passphrase-protected access and AI-generated data insights
-- 🗄️ **Room database** seeded once from CSV — all subsequent reads/writes are local and persistent
-- 📋 **Double-tap to copy** AI tips straight to clipboard (original HD feature)
+- **Multi-user authentication** with persistent sessions and SHA-256 hashed passwords
+- **AI-powered NutriCoach** using Gemini via Firebase AI Logic, personalised to each user's HEIFA score profile
+- **Live fruit nutrition data** via the FruityVice API, conditionally shown based on dietary scores
+- **Clinician Admin Dashboard** with passphrase-protected access and AI-generated data insights
+- **Room database** seeded once from CSV — all subsequent reads/writes are local and persistent
+- **Double-tap to copy** AI tips straight to clipboard (original HD feature)
 
 ### ✍️ Author
 
