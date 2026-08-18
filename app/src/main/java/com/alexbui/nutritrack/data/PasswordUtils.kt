@@ -44,7 +44,7 @@ object PasswordUtils {
             val expectedHash = Base64.getDecoder().decode(parts[1])
             val actualHash = sha256(salt + password.toByteArray())
             expectedHash.contentEquals(actualHash)
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }

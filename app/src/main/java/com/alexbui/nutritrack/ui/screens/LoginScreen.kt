@@ -30,6 +30,7 @@ import com.alexbui.nutritrack.data.PasswordUtils
 import com.alexbui.nutritrack.data.PhoneUtils
 import com.alexbui.nutritrack.data.patient.Patient
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Enum class LoginMode to switch between login and registration screen behavior
@@ -369,7 +370,7 @@ fun LoginScreen(navController: NavHostController) {
 
                                 var claimedPatient: Patient? = null
                                 repeat(5) {
-                                    delay(100L)
+                                    delay(100L.milliseconds)
                                     claimedPatient = viewModel.getPatientById(selectedUserId)
                                     if (claimedPatient != null) return@repeat
                                 }

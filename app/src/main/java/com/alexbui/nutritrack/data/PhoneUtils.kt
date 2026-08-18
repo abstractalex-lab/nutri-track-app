@@ -104,7 +104,7 @@ object PhoneUtils {
     }
 
     /**
-     * Normalises a phone number for storage in Room
+     * Normalizes a phone number for storage in Room
      *
      * Strips all non-digit characters to ensure consistent storage format.
      * Converts local Australian 0x format to full 61x format.
