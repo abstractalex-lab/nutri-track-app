@@ -8,6 +8,7 @@
 ![Room](https://img.shields.io/badge/Room_DB-FF6F00?style=flat&logo=android&logoColor=white)
 ![Firebase](https://img.shields.io/badge/Firebase_AI_Logic-FFCA28?style=flat&logo=firebase&logoColor=black)
 ![Status](https://img.shields.io/badge/status-maintained-brightgreen?style=flat)
+![License](https://img.shields.io/badge/license-MIT-lightgrey?style=flat)
 
 
 ## ℹ️ Overview
